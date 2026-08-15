@@ -1,459 +1,700 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b1220" />
-  <title>حاسبة بلوت 152</title>
-  <style>
-    :root{
-      --bg:#0b1220;
-      --card:#111a2e;
-      --text:#eef2ff;
-      --muted:#a8b3cf;
-      --border:rgba(255,255,255,.10);
-      --shadow:0 10px 30px rgba(0,0,0,.35);
-      --primary:#5b8cff;
-      --primary2:#7c5cff;
-      --chip:rgba(255,255,255,.08);
-      --ok:#22c55e;
-      --bad:#ef4444;
-    }
-    @media (prefers-color-scheme: light){
-      :root{
-        --bg:#f6f7fb;
-        --card:#ffffff;
-        --text:#111827;
-        --muted:#6b7280;
-        --border:rgba(17,24,39,.10);
-        --shadow:0 10px 30px rgba(17,24,39,.08);
-        --chip:rgba(17,24,39,.06);
-      }
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دفتر الدفعات</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F6F7F9;
+    --surface:#FFFFFF;
+    --ink:#17222E;
+    --muted:#6A7683;
+    --faint:#9AA4AF;
+    --line:#E6E9ED;
+    --line-2:#EFF1F4;
+    --accent:#0E7C6B;
+    --accent-ink:#0A5D50;
+    --accent-soft:#E4F1EE;
+    --income:#0E7C6B;
+    --negative:#B4462F;
+    --shadow:0 1px 2px rgba(23,34,46,.04), 0 8px 24px rgba(23,34,46,.05);
+    --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"IBM Plex Sans Arabic",system-ui,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    font-size:15px;
+  }
+  .num{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+  .wrap{max-width:1080px;margin:0 auto;padding:22px 20px 80px}
 
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-      background: radial-gradient(1200px 700px at 20% -10%, rgba(91,140,255,.25), transparent 60%),
-                  radial-gradient(900px 600px at 90% 10%, rgba(124,92,255,.22), transparent 55%),
-                  var(--bg);
-      color:var(--text);
-      padding: 14px;
-      padding-bottom: calc(14px + env(safe-area-inset-bottom));
-      min-height:100dvh;
-    }
+  /* header */
+  header.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:12px}
+  .mark{width:38px;height:38px;border-radius:10px;background:var(--ink);display:grid;place-items:center;flex:none}
+  .mark span{width:16px;height:2px;background:#fff;box-shadow:0 -5px 0 #fff, 0 5px 0 var(--accent);display:block}
+  .brand h1{font-size:18px;font-weight:700;letter-spacing:-.2px}
+  .brand p{font-size:12px;color:var(--muted);font-weight:500}
+  .tools{display:flex;gap:8px;position:relative}
+  .btn{font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:9px 14px;border-radius:10px;display:inline-flex;align-items:center;gap:6px;transition:.15s;white-space:nowrap}
+  .btn:hover{border-color:var(--faint);background:#fbfbfc}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover{background:var(--accent-ink);border-color:var(--accent-ink)}
+  .menu{position:absolute;top:calc(100% + 6px);left:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:6px;min-width:170px;z-index:30;display:none}
+  .menu.open{display:block}
+  .menu button{display:block;width:100%;text-align:start;font-family:inherit;font-size:13.5px;font-weight:500;background:none;border:none;color:var(--ink);padding:9px 10px;border-radius:8px;cursor:pointer}
+  .menu button:hover{background:var(--line-2)}
 
-    .wrap{max-width:900px; margin:0 auto}
+  /* summary */
+  .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:15px 16px}
+  .stat .lbl{font-size:12px;color:var(--muted);font-weight:500;margin-bottom:8px}
+  .stat .val{font-size:22px;font-weight:600}
+  .stat .val small{font-size:12px;color:var(--faint);font-weight:500;margin-inline-start:3px}
+  .stat.net .val.pos{color:var(--income)}
+  .stat.net .val.neg{color:var(--negative)}
 
-    header{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:12px; margin:6px 0 10px;
-    }
-    .title{display:flex; flex-direction:column; gap:6px}
-    h1{font-size:20px; margin:0}
-    .sub{font-size:13px; color:var(--muted)}
-    .target{
-      font-weight:700;
-      background: linear-gradient(135deg, var(--primary), var(--primary2));
-      color:white;
-      padding:10px 12px;
-      border-radius:14px;
-      box-shadow: var(--shadow);
-      white-space:nowrap;
-      font-size:13px;
-    }
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .card + .card{margin-top:16px}
+  .card-h{padding:14px 18px;border-bottom:1px solid var(--line-2);display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .card-h h2{font-size:14px;font-weight:600}
+  .card-h .hint{font-size:12px;color:var(--faint)}
 
-    .card{
-      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
-      border:1px solid var(--border);
-      border-radius:18px;
-      padding:14px;
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      margin: 10px 0;
-    }
+  /* add form */
+  .form{padding:16px 18px}
+  .grid-in{display:grid;grid-template-columns:130px 1.6fr 110px 1fr 1fr auto;gap:10px;align-items:end}
+  .field{display:flex;flex-direction:column;gap:5px;min-width:0}
+  .field label{font-size:11.5px;color:var(--muted);font-weight:500;padding-inline-start:2px}
+  input,select{font-family:inherit;font-size:14px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:9px 11px;width:100%;transition:.15s}
+  input.num{font-family:"IBM Plex Mono",monospace;text-align:start}
+  input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+  .seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .seg button{flex:1;font-family:inherit;font-size:13px;font-weight:600;padding:9px 6px;background:var(--surface);border:none;cursor:pointer;color:var(--muted);transition:.15s}
+  .seg button.on[data-t="out"]{background:var(--ink);color:#fff}
+  .seg button.on[data-t="in"]{background:var(--accent);color:#fff}
+  .notes-row{margin-top:10px}
+  .notes-row input{font-size:13.5px}
 
-    /* المربع الأول ياخذ الشاشة تقريباً */
-    .hero{
-      min-height: calc(100dvh - 28px);
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-    }
+  /* filters */
+  .filters{padding:12px 18px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--line-2)}
+  .filters input, .filters select{width:auto}
+  .filters .search{flex:1;min-width:160px}
+  .filters .clr{margin-inline-start:auto;color:var(--muted);font-weight:500;font-size:13px}
+  .filters .clr:hover{color:var(--ink)}
 
-    /* الإدخالات جنب بعض */
-    .grid2{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:12px;
-    }
-    /* نخليها جنب بعض حتى على الجوال، إلا إذا الشاشة ضيقة جداً */
-    @media (max-width:360px){
-      .grid2{grid-template-columns:1fr}
-    }
+  /* table */
+  .tbl-scroll{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:14px;min-width:640px}
+  thead th{font-size:12px;font-weight:600;color:var(--muted);text-align:start;padding:11px 18px;border-bottom:1px solid var(--line);white-space:nowrap;position:sticky;top:0;background:var(--surface)}
+  th.sortable{cursor:pointer;user-select:none}
+  th.sortable:hover{color:var(--ink)}
+  th .arw{opacity:.4;font-size:10px;margin-inline-start:3px}
+  th.act-col{color:var(--income)} /* keep amount header calm */
+  tbody td{padding:12px 18px;border-bottom:1px solid var(--line-2);vertical-align:middle}
+  tbody tr:hover{background:#fafbfc}
+  tbody tr:last-child td{border-bottom:none}
+  .item-cell{font-weight:500}
+  .note-sub{display:block;font-size:11.5px;color:var(--faint);font-weight:400;margin-top:1px}
+  .tag{display:inline-block;font-size:11.5px;font-weight:500;color:var(--muted);background:var(--line-2);padding:2px 9px;border-radius:20px;white-space:nowrap}
+  .src-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block;margin-inline-end:6px;vertical-align:middle;opacity:.7}
+  td.amount{text-align:start;font-weight:600;white-space:nowrap}
+  td.amount .cur{color:var(--faint);font-size:11px;font-weight:500;margin-inline-start:3px}
+  td.amount.in{color:var(--income)}
+  .row-act{display:flex;gap:4px;justify-content:flex-end}
+  .icon-btn{width:30px;height:30px;border:none;background:none;border-radius:8px;cursor:pointer;color:var(--faint);display:grid;place-items:center;transition:.15s}
+  .icon-btn:hover{background:var(--line-2);color:var(--ink)}
+  .icon-btn.del:hover{background:#fbeae6;color:var(--negative)}
+  .icon-btn.strike.on{color:var(--negative)}
+  .icon-btn.strike:hover{background:var(--line-2);color:var(--ink)}
+  .icon-btn svg{width:16px;height:16px}
 
-    label{
-      display:flex; justify-content:space-between; align-items:center;
-      font-size:13px; color:var(--muted); margin:0 0 8px;
-    }
-    .field{
-      background: var(--chip);
-      border:1px solid var(--border);
-      border-radius:14px;
-      padding:12px;
-      display:flex;
-      gap:10px;
-      align-items:center;
-    }
-    input{
-      width:100%;
-      font-size:18px;
-      padding:0;
-      border:0;
-      outline:0;
-      background:transparent;
-      color:var(--text);
-    }
-    input::placeholder{color:rgba(168,179,207,.75)}
-    .dot{
-      width:10px; height:10px; border-radius:999px;
-      background: linear-gradient(135deg, var(--primary), var(--primary2));
-      flex:0 0 auto;
-      opacity:.95;
-    }
+  /* struck (voided) rows */
+  tr.struck{background:#fbfbfc}
+  tr.struck td{color:var(--faint)}
+  tr.struck .item-cell{text-decoration:line-through;text-decoration-color:var(--negative);text-decoration-thickness:1.5px;color:var(--muted)}
+  tr.struck td.amount{text-decoration:line-through;text-decoration-color:var(--negative);color:var(--faint)!important}
+  tr.struck .tag,tr.struck .src-dot{opacity:.5}
+  .strike-note{display:block;font-size:11.5px;color:var(--negative);font-weight:500;margin-top:3px;text-decoration:none}
+  .strike-note b{font-weight:600}
 
-    .actions{
-      display:grid;
-      grid-template-columns: 1.2fr .9fr .9fr;
-      gap:10px;
-      margin-top:4px;
-    }
-    button{
-      width:100%;
-      border:1px solid var(--border);
-      border-radius:14px;
-      padding:12px 12px;
-      font-size:15px;
-      cursor:pointer;
-      background: var(--chip);
-      color:var(--text);
-      transition: transform .05s ease;
-      touch-action: manipulation;
-    }
-    button:active{transform: scale(.99)}
-    .primary{
-      border:0;
-      background: linear-gradient(135deg, var(--primary), var(--primary2));
-      color:white;
-      font-weight:700;
-    }
-    .danger{
-      background: rgba(239,68,68,.12);
-      border-color: rgba(239,68,68,.22);
-    }
+  .empty{padding:56px 20px;text-align:center;color:var(--muted)}
+  .empty .big{font-size:15px;font-weight:600;color:var(--ink);margin-bottom:6px}
+  .empty .sm{font-size:13px}
 
-    .msg{
-      padding:10px 12px;
-      border-radius:14px;
-      border:1px solid var(--border);
-      background: rgba(239,68,68,.12);
-      display:none;
-      font-size:13px;
-    }
+  /* source breakdown */
+  .breakdown{padding:16px 18px 18px}
+  .bd-row{display:grid;grid-template-columns:130px 1fr auto;gap:12px;align-items:center;margin-bottom:11px}
+  .bd-row:last-child{margin-bottom:0}
+  .bd-name{font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bd-bar{height:9px;background:var(--line-2);border-radius:20px;overflow:hidden}
+  .bd-fill{height:100%;background:linear-gradient(90deg,var(--accent),#16a08a);border-radius:20px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+  .bd-amt{font-size:13px;font-weight:600;white-space:nowrap}
+  .bd-amt .pct{color:var(--faint);font-size:11px;font-weight:500;margin-inline-start:5px}
 
-    /* مجموع لنا/لهم داخل نفس المربع */
-    .totals{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:10px;
-    }
-    .pill{
-      padding:12px 12px;
-      border-radius:16px;
-      border:1px solid var(--border);
-      background: var(--chip);
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      font-size:14px;
-    }
-    .pill b{font-size:18px}
-    .badge{
-      padding:6px 10px;
-      border-radius:999px;
-      font-size:12px;
-      border:1px solid var(--border);
-      background: rgba(255,255,255,.06);
-      color: var(--muted);
-      white-space:nowrap;
-    }
-    .win{
-      border-color: rgba(34,197,94,.30);
-      background: rgba(34,197,94,.12);
-    }
+  footer{text-align:center;color:var(--faint);font-size:12px;margin-top:26px}
+  /* modal */
+  .overlay{position:fixed;inset:0;background:rgba(23,34,46,.42);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
+  .overlay.open{display:flex}
+  .modal{background:var(--surface);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.28);width:100%;max-width:400px;padding:22px;transform:translateY(8px);transition:.2s}
+  .overlay.open .modal{transform:translateY(0)}
+  .modal h3{font-size:16px;font-weight:700;margin-bottom:8px}
+  .modal p{font-size:13.5px;color:var(--muted);line-height:1.6}
+  .modal p b{color:var(--ink);font-weight:600}
+  .m-field{margin-top:14px;display:flex;flex-direction:column;gap:6px}
+  .m-field label{font-size:12px;color:var(--muted);font-weight:500}
+  .m-err{font-size:12px;color:var(--negative);font-weight:500}
+  .m-actions{display:flex;gap:10px;margin-top:18px}
+  .m-actions .btn{flex:1;justify-content:center;padding:11px}
+  .btn.danger{background:var(--negative);border-color:var(--negative);color:#fff}
+  .btn.danger:hover{background:#9c3a26;border-color:#9c3a26}
 
-    .hintRow{
-      display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;
-      color:var(--muted); font-size:12px;
-      margin-top:auto;
-      padding-top:6px;
-    }
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:#fff;padding:11px 18px;border-radius:10px;font-size:13.5px;font-weight:500;box-shadow:0 8px 30px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:.25s;z-index:50}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
-    /* السجل تحت */
-    .tableWrap{
-      overflow:auto;
-      border-radius:16px;
-      border:1px solid var(--border);
-      background: rgba(0,0,0,.06);
-    }
-    table{
-      width:100%;
-      border-collapse:collapse;
-      min-width: 520px;
-    }
-    th, td{
-      padding:12px 12px;
-      border-bottom:1px solid var(--border);
-      text-align:right;
-      font-size:14px;
-    }
-    th{
-      position: sticky;
-      top:0;
-      background: rgba(0,0,0,.12);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      z-index:1;
-      color: var(--muted);
-      font-weight:600;
-    }
-    tr:last-child td{border-bottom:0}
-    .rowTotal{color:var(--muted); font-size:13px}
-    .sectionTitle{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:10px; margin:0 0 10px;
-    }
-    .sectionTitle h2{margin:0; font-size:16px}
-    .mini{font-size:12px; color:var(--muted)}
-  </style>
+  @media (max-width:820px){
+    .summary{grid-template-columns:1fr 1fr}
+    .grid-in{grid-template-columns:1fr 1fr;gap:10px}
+    .grid-in .field.wide{grid-column:1 / -1}
+    .grid-in .field.submit{grid-column:1 / -1}
+    .grid-in .field.submit .btn{width:100%;justify-content:center}
+    .bd-row{grid-template-columns:100px 1fr auto}
+  }
+  @media (max-width:480px){
+    .summary{grid-template-columns:1fr 1fr}
+    .stat .val{font-size:19px}
+  }
+</style>
 </head>
-
 <body>
 <div class="wrap">
-  <section class="card hero" aria-label="الإدخال والمجموع">
-    <header>
-      <div class="title">
-        <h1>حاسبة بلوت</h1>
-        <div class="sub">سجل نقاط (لنا / لهم) — وتحفظ تلقائياً على الجهاز</div>
-      </div>
-      <div class="target">الهدف: 152</div>
-    </header>
 
-    <div class="totals">
-      <div id="tUs" class="pill">
-        <span>لنا</span>
-        <b id="vUs">0</b>
-        <span class="badge" id="bUs">جاري</span>
-      </div>
-
-      <div id="tThem" class="pill">
-        <span>لهم</span>
-        <b id="vThem">0</b>
-        <span class="badge" id="bThem">جاري</span>
+  <header class="top">
+    <div class="brand">
+      <div class="mark"><span></span></div>
+      <div>
+        <h1>دفتر الدفعات</h1>
+        <p>سجّل كل بند تدفعه، واعرف وين راحت الفلوس</p>
       </div>
     </div>
-
-    <div class="grid2">
-      <div>
-        <label>نقاط لنا <span class="badge">الجولة</span></label>
-        <div class="field">
-          <span class="dot"></span>
-          <input id="us" inputmode="numeric" autocomplete="off" placeholder="0" />
+    <div class="tools">
+      <div style="position:relative">
+        <button class="btn" id="exportBtn">تصدير ▾</button>
+        <div class="menu" id="exportMenu">
+          <button data-x="json">نسخة احتياطية (JSON)</button>
+          <button data-x="csv">ملف Excel (CSV)</button>
         </div>
       </div>
+      <button class="btn" id="importBtn">استيراد</button>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
+    </div>
+  </header>
 
-      <div>
-        <label>نقاط لهم <span class="badge">الجولة</span></label>
+  <section class="summary" id="summary"></section>
+
+  <div class="card">
+    <div class="card-h"><h2>إضافة بند</h2><span class="hint">التاريخ والبند والمبلغ إلزامية</span></div>
+    <div class="form">
+      <div class="grid-in">
         <div class="field">
-          <span class="dot"></span>
-          <input id="them" inputmode="numeric" autocomplete="off" placeholder="0" />
+          <label for="fDate">التاريخ</label>
+          <input type="date" id="fDate">
+        </div>
+        <div class="field wide">
+          <label for="fItem">البند</label>
+          <input type="text" id="fItem" placeholder="مثال: فاتورة مورّد" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="fAmount">المبلغ</label>
+          <input type="text" inputmode="decimal" class="num" id="fAmount" placeholder="0.00" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="fSource">الجهة</label>
+          <input type="text" id="fSource" list="srcList" placeholder="من وين دفعت" autocomplete="off">
+          <datalist id="srcList"></datalist>
+        </div>
+        <div class="field">
+          <label for="fCat">التصنيف</label>
+          <input type="text" id="fCat" list="catList" placeholder="اختياري" autocomplete="off">
+          <datalist id="catList"></datalist>
+        </div>
+        <div class="field submit">
+          <label>&nbsp;</label>
+          <div class="seg" id="typeSeg" style="margin-bottom:0">
+            <button type="button" data-t="out" class="on">صرف</button>
+            <button type="button" data-t="in">دخل</button>
+          </div>
         </div>
       </div>
+      <div class="notes-row grid-in" style="grid-template-columns:1fr auto;margin-top:10px">
+        <div class="field"><input type="text" id="fNote" placeholder="ملاحظة (اختياري)" autocomplete="off"></div>
+        <div class="field"><button class="btn primary" id="addBtn" style="height:39px;padding:0 26px">إضافة البند</button></div>
+      </div>
     </div>
+  </div>
 
-    <div class="actions">
-      <button id="add" class="primary">إضافة الجولة</button>
-      <button id="undo">تراجع</button>
-      <button id="reset" class="danger">تصفير</button>
+  <div class="card">
+    <div class="filters">
+      <input type="text" class="search" id="qSearch" placeholder="بحث في البنود…">
+      <select id="qSource"><option value="">كل الجهات</option></select>
+      <select id="qCat"><option value="">كل التصنيفات</option></select>
+      <a href="#" class="btn clr" id="clrFilters" style="border:none;background:none;padding:6px">مسح الفلاتر</a>
     </div>
-
-    <div id="msg" class="msg"></div>
-
-    <div class="hintRow">
-      <span>Enter للإضافة</span>
-      <span>سجل الجولات تحت ↓</span>
-    </div>
-  </section>
-
-  <section class="card" aria-label="سجل الجولات">
-    <div class="sectionTitle">
-      <h2>سجل الجولات</h2>
-      <div class="mini">عدد الجولات: <span id="roundCount">0</span></div>
-    </div>
-
-    <div class="tableWrap">
+    <div class="tbl-scroll">
       <table>
         <thead>
           <tr>
-            <th style="width:70px">#</th>
-            <th>لنا</th>
-            <th>لهم</th>
-            <th>بعد الإضافة</th>
+            <th class="sortable" data-sort="date">التاريخ <span class="arw" data-for="date"></span></th>
+            <th>البند</th>
+            <th>الجهة</th>
+            <th>التصنيف</th>
+            <th class="sortable" data-sort="amount">المبلغ <span class="arw" data-for="amount"></span></th>
+            <th></th>
           </tr>
         </thead>
-        <tbody id="rows"></tbody>
+        <tbody id="tbody"></tbody>
       </table>
     </div>
-  </section>
+    <div class="empty" id="empty" hidden>
+      <div class="big">ما فيه بنود بعد</div>
+      <div class="sm">أضف أول بند من الأعلى، وبتلقاه هنا مباشرة.</div>
+    </div>
+  </div>
+
+  <div class="card" id="bdCard" hidden>
+    <div class="card-h"><h2>وين راحت الفلوس</h2><span class="hint">توزيع الصرف حسب الجهة</span></div>
+    <div class="breakdown" id="breakdown"></div>
+  </div>
+
+  <footer>البيانات محفوظة في متصفحك على هذا الجهاز · صدّر نسخة احتياطية بين فترة وأخرى</footer>
 </div>
 
+<div class="overlay" id="overlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <h3 id="mTitle"></h3>
+    <p id="mMsg"></p>
+    <div class="m-field" id="mField" hidden>
+      <label id="mLabel"></label>
+      <input type="text" id="mInput" autocomplete="off">
+      <div class="m-err" id="mErr" hidden></div>
+    </div>
+    <div class="m-actions">
+      <button class="btn" id="mCancel">إلغاء</button>
+      <button class="btn primary" id="mOk">تأكيد</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script>
-  const TARGET = 152;
+(function(){
+  "use strict";
+  const KEY = "daftar_payments_v1";
+  const CUR = "ر.س";
 
-  const elUs = document.getElementById('us');
-  const elThem = document.getElementById('them');
-  const elAdd = document.getElementById('add');
-  const elUndo = document.getElementById('undo');
-  const elReset = document.getElementById('reset');
-  const elRows = document.getElementById('rows');
-  const elMsg = document.getElementById('msg');
-
-  const vUs = document.getElementById('vUs');
-  const vThem = document.getElementById('vThem');
-  const tUs = document.getElementById('tUs');
-  const tThem = document.getElementById('tThem');
-  const bUs = document.getElementById('bUs');
-  const bThem = document.getElementById('bThem');
-  const roundCount = document.getElementById('roundCount');
-
-  let rounds = []; // {us, them, totalUs, totalThem}
-
-  function showError(text){
-    elMsg.textContent = text;
-    elMsg.style.display = 'block';
-  }
-  function clearError(){
-    elMsg.textContent = '';
-    elMsg.style.display = 'none';
-  }
-
-  // طلبك: إذا الخانة فاضية = 0
-  function parsePointsAllowEmpty(v){
-    const s = (v ?? '').trim();
-    if (s === '') return 0;
-    if (!/^\d+$/.test(s)) return NaN;
-    return Number(s);
-  }
-
-  function totals(){
-    if (!rounds.length) return {us:0, them:0};
-    const last = rounds[rounds.length - 1];
-    return {us:last.totalUs, them:last.totalThem};
-  }
-
-  function render(){
-    elRows.innerHTML = '';
-    for (let i = 0; i < rounds.length; i++){
-      const r = rounds[i];
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${i+1}</td>
-        <td>${r.us}</td>
-        <td>${r.them}</td>
-        <td class="rowTotal">لنا ${r.totalUs} — لهم ${r.totalThem}</td>
-      `;
-      elRows.appendChild(tr);
+  // ---- storage (guarded so it works even where localStorage is blocked) ----
+  let mem = null;
+  const store = {
+    load(){
+      if(mem) return mem;
+      try { mem = JSON.parse(localStorage.getItem(KEY)) || []; }
+      catch(e){ mem = []; }
+      if(!Array.isArray(mem)) mem = [];
+      return mem;
+    },
+    save(){
+      try { localStorage.setItem(KEY, JSON.stringify(mem)); } catch(e){ /* session only */ }
     }
+  };
 
-    const t = totals();
-    vUs.textContent = t.us;
-    vThem.textContent = t.them;
-    roundCount.textContent = rounds.length;
+  let data = store.load();
+  let sortKey = "date", sortDir = -1; // newest first
+  let curType = "out";
 
-    const usReached = t.us >= TARGET;
-    const themReached = t.them >= TARGET;
+  const $ = s => document.querySelector(s);
+  const el = {
+    tbody:$("#tbody"), empty:$("#empty"), summary:$("#summary"),
+    bdCard:$("#bdCard"), breakdown:$("#breakdown"),
+    qSearch:$("#qSearch"), qSource:$("#qSource"), qCat:$("#qCat"),
+    srcList:$("#srcList"), catList:$("#catList"),
+    fDate:$("#fDate"), fItem:$("#fItem"), fAmount:$("#fAmount"),
+    fSource:$("#fSource"), fCat:$("#fCat"), fNote:$("#fNote"),
+    toast:$("#toast")
+  };
 
-    tUs.classList.toggle('win', usReached);
-    tThem.classList.toggle('win', themReached);
-
-    bUs.textContent = usReached ? 'وصل ✅' : 'جاري';
-    bThem.textContent = themReached ? 'وصل ✅' : 'جاري';
-
-    save();
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  const todayISO = () => new Date().toISOString().slice(0,10);
+  function fmt(n){
+    n = Number(n)||0;
+    return n.toLocaleString("en-US",{minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+  function fmtDate(iso){
+    if(!iso) return "";
+    const d = new Date(iso+"T00:00:00");
+    if(isNaN(d)) return iso;
+    return d.toLocaleDateString("ar",{day:"2-digit",month:"short",year:"numeric"});
+  }
+  let toastT;
+  function toast(msg){
+    el.toast.textContent = msg; el.toast.classList.add("show");
+    clearTimeout(toastT); toastT = setTimeout(()=>el.toast.classList.remove("show"),2200);
   }
 
-  function addRound(){
-    clearError();
+  // ---- reusable modal (confirm / prompt-with-required-note) ----
+  const ov = $("#overlay"), mTitle=$("#mTitle"), mMsg=$("#mMsg"),
+        mField=$("#mField"), mLabel=$("#mLabel"), mInput=$("#mInput"),
+        mErr=$("#mErr"), mOk=$("#mOk"), mCancel=$("#mCancel");
+  let modalOk = null;
+  function openModal(o){
+    mTitle.textContent = o.title || "";
+    mMsg.innerHTML = o.msg || "";
+    mOk.textContent = o.okText || "تأكيد";
+    mOk.className = "btn " + (o.danger ? "danger" : "primary");
+    if(o.input){
+      mField.hidden = false;
+      mLabel.textContent = o.inputLabel || "ملاحظة";
+      mInput.value = o.value || "";
+      mInput.placeholder = o.placeholder || "";
+    } else {
+      mField.hidden = true;
+    }
+    mErr.hidden = true;
+    modalOk = o.onOk;
+    ov.classList.add("open");
+    setTimeout(()=>{ (o.input ? mInput : mOk).focus(); }, 40);
+  }
+  function closeModal(){ ov.classList.remove("open"); modalOk = null; }
+  function confirmModal(){
+    if(!modalOk) return closeModal();
+    if(!mField.hidden){
+      const v = mInput.value.trim();
+      if(!v){ mErr.textContent="لازم تكتب الملاحظة"; mErr.hidden=false; mInput.focus(); return; }
+      const fn = modalOk; closeModal(); fn(v);
+    } else {
+      const fn = modalOk; closeModal(); fn();
+    }
+  }
+  mOk.addEventListener("click", confirmModal);
+  mCancel.addEventListener("click", closeModal);
+  ov.addEventListener("click", e=>{ if(e.target===ov) closeModal(); });
+  mInput.addEventListener("keydown", e=>{ if(e.key==="Enter") confirmModal(); });
+  document.addEventListener("keydown", e=>{ if(e.key==="Escape" && ov.classList.contains("open")) closeModal(); });
 
-    const us = parsePointsAllowEmpty(elUs.value);
-    const them = parsePointsAllowEmpty(elThem.value);
-
-    if (!Number.isFinite(us) || !Number.isFinite(them)) return showError('اكتب أرقام فقط.');
-    if (us < 0 || them < 0) return showError('النقاط ما تكون سالبة.');
-
-    const prev = totals();
-    rounds.push({
-      us, them,
-      totalUs: prev.us + us,
-      totalThem: prev.them + them
+  // ---- add ----
+  el.fDate.value = todayISO();
+  document.querySelectorAll("#typeSeg button").forEach(b=>{
+    b.addEventListener("click",()=>{
+      curType = b.dataset.t;
+      document.querySelectorAll("#typeSeg button").forEach(x=>x.classList.toggle("on", x===b));
     });
-
-    elUs.value = '';
-    elThem.value = '';
-    elUs.focus();
-    render();
-  }
-
-  function undo(){
-    clearError();
-    if (!rounds.length) return;
-    rounds.pop();
-    render();
-  }
-
-  function resetAll(){
-    clearError();
-    rounds = [];
-    localStorage.removeItem('baloot_rounds_v3');
-    render();
-  }
-
-  function save(){
-    localStorage.setItem('baloot_rounds_v3', JSON.stringify(rounds));
-  }
-
-  function load(){
-    try{
-      const raw = localStorage.getItem('baloot_rounds_v3');
-      if (raw) rounds = JSON.parse(raw) || [];
-    } catch(e){
-      rounds = [];
-    }
-    render();
-  }
-
-  elAdd.addEventListener('click', addRound);
-  elUndo.addEventListener('click', undo);
-  elReset.addEventListener('click', resetAll);
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') addRound();
   });
 
-  load();
+  function parseAmt(v){
+    if(v==null) return NaN;
+    v = String(v).replace(/[^\d.]/g,"");
+    return v==="" ? NaN : parseFloat(v);
+  }
+
+  function addEntry(){
+    const item = el.fItem.value.trim();
+    const amount = parseAmt(el.fAmount.value);
+    const date = el.fDate.value || todayISO();
+    if(!item){ toast("اكتب اسم البند"); el.fItem.focus(); return; }
+    if(!(amount>0)){ toast("اكتب مبلغ صحيح"); el.fAmount.focus(); return; }
+    data.push({
+      id:uid(), date, item, amount,
+      source: el.fSource.value.trim(),
+      cat: el.fCat.value.trim(),
+      note: el.fNote.value.trim(),
+      type: curType
+    });
+    store.save();
+    el.fItem.value=""; el.fAmount.value=""; el.fNote.value="";
+    el.fItem.focus();
+    render();
+    toast("انضاف البند");
+  }
+  $("#addBtn").addEventListener("click", addEntry);
+  [el.fItem, el.fAmount, el.fSource, el.fCat, el.fNote].forEach(inp=>{
+    inp.addEventListener("keydown", e=>{ if(e.key==="Enter") addEntry(); });
+  });
+
+  // ---- delete / strike / edit ----
+  function delEntry(id){
+    const row = data.find(d=>d.id===id);
+    if(!row) return;
+    openModal({
+      title:"هل أنت متأكد؟",
+      msg:`راح ينحذف البند <b>«${esc(row.item)}»</b> نهائيًا وما تقدر ترجعه.`,
+      okText:"احذف", danger:true,
+      onOk:()=>{
+        data = data.filter(d=>d.id!==id);
+        store.save(); render(); toast("انحذف البند");
+      }
+    });
+  }
+  function strikeEntry(id){
+    const row = data.find(d=>d.id===id);
+    if(!row) return;
+    if(row.struck){
+      openModal({
+        title:"إلغاء الشطب؟",
+        msg:`راح يرجع البند <b>«${esc(row.item)}»</b> فعّال ويُحتسب من جديد.`,
+        okText:"إلغاء الشطب",
+        onOk:()=>{ row.struck=false; row.strikeNote=""; store.save(); render(); toast("رجع البند"); }
+      });
+    } else {
+      openModal({
+        title:"شطب البند",
+        msg:`راح يبقى البند <b>«${esc(row.item)}»</b> ظاهر بس مشطوب، ومايُحتسب في المجاميع.`,
+        input:true, inputLabel:"سبب الشطب / ملاحظة", placeholder:"مثال: تكرر بالغلط",
+        okText:"اشطب",
+        onOk:(note)=>{ row.struck=true; row.strikeNote=note; store.save(); render(); toast("انشطب البند"); }
+      });
+    }
+  }
+  function editEntry(id){
+    const row = data.find(d=>d.id===id);
+    if(!row) return;
+    const item = prompt("البند:", row.item); if(item===null) return;
+    const amtS = prompt("المبلغ:", row.amount); if(amtS===null) return;
+    const amt = parseAmt(amtS);
+    const source = prompt("الجهة:", row.source||""); if(source===null) return;
+    const cat = prompt("التصنيف:", row.cat||""); if(cat===null) return;
+    row.item = item.trim() || row.item;
+    if(amt>0) row.amount = amt;
+    row.source = source.trim();
+    row.cat = cat.trim();
+    store.save(); render(); toast("تم التعديل");
+  }
+
+  // ---- filters ----
+  [el.qSearch, el.qSource, el.qCat].forEach(f=> f.addEventListener("input", render));
+  $("#clrFilters").addEventListener("click", e=>{
+    e.preventDefault();
+    el.qSearch.value=""; el.qSource.value=""; el.qCat.value=""; render();
+  });
+  document.querySelectorAll("th.sortable").forEach(th=>{
+    th.addEventListener("click",()=>{
+      const k = th.dataset.sort;
+      if(sortKey===k) sortDir*=-1; else { sortKey=k; sortDir = k==="amount"?-1:-1; }
+      render();
+    });
+  });
+
+  function filtered(){
+    const q = el.qSearch.value.trim().toLowerCase();
+    const src = el.qSource.value, cat = el.qCat.value;
+    let list = data.filter(d=>{
+      if(src && d.source!==src) return false;
+      if(cat && d.cat!==cat) return false;
+      if(q){
+        const hay = (d.item+" "+(d.source||"")+" "+(d.cat||"")+" "+(d.note||"")).toLowerCase();
+        if(!hay.includes(q)) return false;
+      }
+      return true;
+    });
+    list.sort((a,b)=>{
+      let r;
+      if(sortKey==="amount") r = a.amount-b.amount;
+      else r = (a.date<b.date?-1:a.date>b.date?1:0);
+      return r*sortDir;
+    });
+    return list;
+  }
+
+  // ---- render ----
+  function uniq(key){ return [...new Set(data.map(d=>d[key]).filter(Boolean))].sort(); }
+
+  function render(){
+    // datalists + filter selects
+    const sources = uniq("source"), cats = uniq("cat");
+    el.srcList.innerHTML = sources.map(s=>`<option value="${esc(s)}">`).join("");
+    el.catList.innerHTML = cats.map(s=>`<option value="${esc(s)}">`).join("");
+    syncSelect(el.qSource, sources, "كل الجهات");
+    syncSelect(el.qCat, cats, "كل التصنيفات");
+
+    const list = filtered();
+
+    // table
+    if(data.length===0){ el.empty.hidden=false; el.tbody.innerHTML=""; }
+    else { el.empty.hidden=true; }
+    el.tbody.innerHTML = list.map(d=>{
+      const isIn = d.type==="in";
+      const sub = d.struck
+        ? `<span class="strike-note"><b>سبب الشطب:</b> ${esc(d.strikeNote||"")}</span>`
+        : (d.note?`<span class="note-sub">${esc(d.note)}</span>`:"");
+      return `<tr class="${d.struck?"struck":""}">
+        <td class="num" style="color:var(--muted);font-size:13px">${fmtDate(d.date)}</td>
+        <td class="item-cell">${esc(d.item)}${sub}</td>
+        <td>${d.source?`<span class="src-dot"></span>${esc(d.source)}`:`<span style="color:var(--faint)">—</span>`}</td>
+        <td>${d.cat?`<span class="tag">${esc(d.cat)}</span>`:`<span style="color:var(--faint)">—</span>`}</td>
+        <td class="amount num ${isIn?"in":""}">${isIn?"+":""}${fmt(d.amount)}<span class="cur">${CUR}</span></td>
+        <td>
+          <div class="row-act">
+            <button class="icon-btn strike ${d.struck?"on":""}" title="${d.struck?"إلغاء الشطب":"شطب"}" data-strike="${d.id}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/></svg>
+            </button>
+            <button class="icon-btn" title="تعديل" data-edit="${d.id}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            </button>
+            <button class="icon-btn del" title="حذف" data-del="${d.id}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+            </button>
+          </div>
+        </td>
+      </tr>`;
+    }).join("");
+    el.tbody.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>delEntry(b.dataset.del));
+    el.tbody.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>editEntry(b.dataset.edit));
+    el.tbody.querySelectorAll("[data-strike]").forEach(b=>b.onclick=()=>strikeEntry(b.dataset.strike));
+
+    // sort arrows
+    document.querySelectorAll(".arw").forEach(a=>a.textContent="");
+    const arw = document.querySelector(`.arw[data-for="${sortKey}"]`);
+    if(arw) arw.textContent = sortDir<0 ? "▼" : "▲";
+
+    renderSummary(list);
+    renderBreakdown();
+  }
+
+  function renderSummary(list){
+    const out = data.filter(d=>d.type!=="in" && !d.struck).reduce((s,d)=>s+d.amount,0);
+    const inc = data.filter(d=>d.type==="in" && !d.struck).reduce((s,d)=>s+d.amount,0);
+    const net = inc - out;
+    const hasIncome = inc>0;
+    const netClass = net>=0?"pos":"neg";
+    let cards = [
+      `<div class="stat"><div class="lbl">إجمالي الصرف</div><div class="val num">${fmt(out)}<small>${CUR}</small></div></div>`,
+      `<div class="stat"><div class="lbl">عدد البنود</div><div class="val num">${data.length}</div></div>`
+    ];
+    if(hasIncome){
+      cards.push(`<div class="stat"><div class="lbl">إجمالي الدخل</div><div class="val num" style="color:var(--income)">${fmt(inc)}<small>${CUR}</small></div></div>`);
+      cards.push(`<div class="stat net"><div class="lbl">الصافي</div><div class="val num ${netClass}">${net<0?"−":""}${fmt(Math.abs(net))}<small>${CUR}</small></div></div>`);
+    } else {
+      const bySource = topSource();
+      cards.push(`<div class="stat"><div class="lbl">أعلى جهة صرف</div><div class="val" style="font-size:16px;font-weight:600">${bySource? esc(bySource.name):"—"}</div></div>`);
+      cards.push(`<div class="stat"><div class="lbl">أعلى مبلغ لبند</div><div class="val num">${fmt(maxItem())}<small>${CUR}</small></div></div>`);
+    }
+    el.summary.innerHTML = cards.join("");
+  }
+
+  function maxItem(){ const o=data.filter(d=>d.type!=="in" && !d.struck); return o.length?Math.max(...o.map(d=>d.amount)):0; }
+  function topSource(){
+    const m = sourceTotals();
+    if(!m.length) return null;
+    return m[0];
+  }
+  function sourceTotals(){
+    const map = {};
+    data.filter(d=>d.type!=="in" && !d.struck).forEach(d=>{
+      const k = d.source || "بدون جهة";
+      map[k] = (map[k]||0)+d.amount;
+    });
+    return Object.entries(map).map(([name,total])=>({name,total})).sort((a,b)=>b.total-a.total);
+  }
+
+  function renderBreakdown(){
+    const totals = sourceTotals();
+    if(totals.length===0){ el.bdCard.hidden=true; return; }
+    el.bdCard.hidden=false;
+    const grand = totals.reduce((s,t)=>s+t.total,0);
+    const max = totals[0].total || 1;
+    el.breakdown.innerHTML = totals.map(t=>{
+      const pct = grand? Math.round(t.total/grand*100):0;
+      const w = Math.max(3, t.total/max*100);
+      return `<div class="bd-row">
+        <div class="bd-name">${esc(t.name)}</div>
+        <div class="bd-bar"><div class="bd-fill" style="width:${w}%"></div></div>
+        <div class="bd-amt num">${fmt(t.total)}<span class="pct">${pct}%</span></div>
+      </div>`;
+    }).join("");
+  }
+
+  function syncSelect(sel, values, allLabel){
+    const cur = sel.value;
+    sel.innerHTML = `<option value="">${allLabel}</option>` + values.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join("");
+    if(values.includes(cur)) sel.value = cur;
+  }
+  function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+  // ---- export / import ----
+  const exportBtn=$("#exportBtn"), exportMenu=$("#exportMenu");
+  exportBtn.addEventListener("click", e=>{ e.stopPropagation(); exportMenu.classList.toggle("open"); });
+  document.addEventListener("click", ()=>exportMenu.classList.remove("open"));
+  exportMenu.addEventListener("click", e=>{
+    const x = e.target.dataset.x;
+    if(x==="json") exportJSON();
+    if(x==="csv") exportCSV();
+    exportMenu.classList.remove("open");
+  });
+
+  function download(name, content, mime){
+    const blob = new Blob([content], {type:mime});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href=url; a.download=name; a.click();
+    setTimeout(()=>URL.revokeObjectURL(url), 500);
+  }
+  function stamp(){ return new Date().toISOString().slice(0,10); }
+  function exportJSON(){
+    download(`daftar-${stamp()}.json`, JSON.stringify(data,null,2), "application/json");
+    toast("تم تصدير النسخة الاحتياطية");
+  }
+  function exportCSV(){
+    const head = ["التاريخ","البند","النوع","الجهة","التصنيف","المبلغ","ملاحظة","مشطوب","سبب الشطب"];
+    const rows = data.map(d=>[d.date, d.item, d.type==="in"?"دخل":"صرف", d.source||"", d.cat||"", d.amount, d.note||"", d.struck?"نعم":"", d.struck?(d.strikeNote||""):""]);
+    const csv = [head, ...rows].map(r=>r.map(c=>{
+      c = String(c==null?"":c);
+      return /[",\n]/.test(c) ? '"'+c.replace(/"/g,'""')+'"' : c;
+    }).join(",")).join("\n");
+    download(`daftar-${stamp()}.csv`, "\uFEFF"+csv, "text/csv;charset=utf-8");
+    toast("تم تصدير ملف CSV");
+  }
+
+  const importFile=$("#importFile");
+  $("#importBtn").addEventListener("click", ()=>importFile.click());
+  importFile.addEventListener("change", e=>{
+    const f = e.target.files[0]; if(!f) return;
+    const rd = new FileReader();
+    rd.onload = () => {
+      try{
+        const arr = JSON.parse(rd.result);
+        if(!Array.isArray(arr)) throw 0;
+        const ids = new Set(data.map(d=>d.id));
+        let added=0;
+        arr.forEach(r=>{
+          if(!r || typeof r!=="object") return;
+          if(!r.id) r.id = uid();
+          if(ids.has(r.id)) return;
+          data.push({
+            id:r.id, date:r.date||todayISO(), item:String(r.item||"بند"),
+            amount:Number(r.amount)||0, source:r.source||"", cat:r.cat||"",
+            note:r.note||"", type:r.type==="in"?"in":"out",
+            struck:!!r.struck, strikeNote:r.strikeNote||""
+          });
+          ids.add(r.id); added++;
+        });
+        store.save(); render();
+        toast(added? `تم استيراد ${added} بند` : "ما فيه بنود جديدة");
+      }catch(err){ toast("الملف غير صالح"); }
+      importFile.value="";
+    };
+    rd.readAsText(f);
+  });
+
+  render();
+})();
 </script>
 </body>
 </html>
