@@ -223,6 +223,7 @@
       <div>
         <h1>دفتر الدفعات</h1>
         <p>سجّل كل بند تدفعه، واعرف وين راحت الفلوس</p>
+        <p class="sync" id="syncState" style="margin-top:2px;font-weight:600">مزامنة…</p>
       </div>
     </div>
     <div class="tools">
@@ -338,27 +339,107 @@
 <script>
 (function(){
   "use strict";
-  const KEY = "daftar_payments_v1";
   const CUR = "ر.س";
+  const LKEY = "daftar_payments_v1";     // local offline cache
+  const QKEY = "daftar_sync_queue_v1";   // pending remote ops
 
-  // ---- storage (guarded so it works even where localStorage is blocked) ----
-  let mem = null;
-  const store = {
-    load(){
-      if(mem) return mem;
-      try { mem = JSON.parse(localStorage.getItem(KEY)) || []; }
-      catch(e){ mem = []; }
-      if(!Array.isArray(mem)) mem = [];
-      return mem;
-    },
-    save(){
-      try { localStorage.setItem(KEY, JSON.stringify(mem)); } catch(e){ /* session only */ }
-    }
-  };
+  // ---- Supabase config ----
+  const SB_URL = "https://xerazwsmclemdhuvdsqq.supabase.co";
+  const SB_KEY = "sb_publishable_d6tPr3zB-FZtgfk6eFLxLg_EZn0Lm5p";
+  const REST = SB_URL + "/rest/v1/payments";
+  const SB_HEAD = { apikey:SB_KEY, Authorization:"Bearer "+SB_KEY, "Content-Type":"application/json" };
 
-  let data = store.load();
+  // ---- local cache (keeps working offline) ----
+  function loadLocal(){ try{ const a=JSON.parse(localStorage.getItem(LKEY)); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+  let data = loadLocal();
+  const store = { save(){ try{ localStorage.setItem(LKEY, JSON.stringify(data)); }catch(e){} } };
+
   let sortKey = "date", sortDir = -1; // newest first
   let curType = "out";
+
+  // ---- row <-> db mapping ----
+  function toRow(d){
+    return { id:d.id, date:d.date||null, item:d.item, amount:d.amount,
+      source:d.source||null, cat:d.cat||null, note:d.note||null,
+      type:d.type||"out", struck:!!d.struck, strike_note:d.strikeNote||null };
+  }
+  function fromRow(r){
+    return { id:r.id, date:r.date||"", item:r.item||"", amount:Number(r.amount)||0,
+      source:r.source||"", cat:r.cat||"", note:r.note||"",
+      type:r.type==="in"?"in":"out", struck:!!r.struck, strikeNote:r.strike_note||"" };
+  }
+
+  // ---- remote ops ----
+  async function remotePull(){
+    const res = await fetch(REST + "?select=*", { headers:SB_HEAD });
+    if(!res.ok) throw new Error("pull "+res.status);
+    return (await res.json()).map(fromRow);
+  }
+  async function remoteUpsert(d){
+    const res = await fetch(REST + "?on_conflict=id", {
+      method:"POST",
+      headers:{ ...SB_HEAD, Prefer:"resolution=merge-duplicates,return=minimal" },
+      body: JSON.stringify(toRow(d))
+    });
+    if(!res.ok) throw new Error("upsert "+res.status);
+  }
+  async function remoteDelete(id){
+    const res = await fetch(REST + "?id=eq."+encodeURIComponent(id), { method:"DELETE", headers:SB_HEAD });
+    if(!res.ok) throw new Error("delete "+res.status);
+  }
+
+  // ---- sync queue (retries failed pushes) ----
+  function loadQueue(){ try{ const a=JSON.parse(localStorage.getItem(QKEY)); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+  let queue = loadQueue();
+  function saveQueue(){ try{ localStorage.setItem(QKEY, JSON.stringify(queue)); }catch(e){} }
+  function queueUpsert(id){ queue = queue.filter(q=>!(q.op==="up"&&q.id===id)); queue.push({op:"up",id}); saveQueue(); flush(); }
+  function queueDelete(id){ queue = queue.filter(q=>q.id!==id); queue.push({op:"del",id}); saveQueue(); flush(); }
+
+  let flushing = false;
+  async function flush(){
+    if(flushing || !queue.length) return;
+    if(navigator.onLine===false){ setSync("offline"); return; }
+    flushing = true; setSync("syncing");
+    while(queue.length){
+      const op = queue[0];
+      try{
+        if(op.op==="up"){ const d = data.find(x=>x.id===op.id); if(d) await remoteUpsert(d); }
+        else if(op.op==="del"){ await remoteDelete(op.id); }
+        queue.shift(); saveQueue();
+      }catch(e){ flushing=false; setSync("offline"); return; }
+    }
+    flushing = false; setSync("ok");
+  }
+  window.addEventListener("online", flush);
+  window.addEventListener("offline", ()=>setSync("offline"));
+
+  // ---- initial sync: push local-only rows, then pull everything ----
+  async function initialSync(){
+    setSync("syncing");
+    try{
+      await flush();
+      if(queue.length) return; // still pending → stay offline-safe
+      const rows = await remotePull();
+      const map = {}; rows.forEach(r=> map[r.id]=r);
+      const localOnly = data.filter(d=> !map[d.id]);
+      for(const d of localOnly){ await remoteUpsert(d); map[d.id]=d; }
+      data = Object.values(map);
+      store.save(); render(); setSync("ok");
+    }catch(e){ setSync("offline"); }
+  }
+
+  function setSync(state){
+    const b = document.getElementById("syncState");
+    if(!b) return;
+    const map = {
+      syncing:["مزامنة…","var(--muted)"],
+      ok:["محفوظ سحابيًا","var(--accent)"],
+      offline:["غير متصل — محفوظ محليًا","var(--negative)"]
+    };
+    const [txt,col] = map[state] || map.ok;
+    b.textContent = txt; b.style.color = col;
+    b.dataset.state = state;
+  }
 
   const $ = s => document.querySelector(s);
   const el = {
@@ -450,14 +531,16 @@
     const date = el.fDate.value || todayISO();
     if(!item){ toast("اكتب اسم البند"); el.fItem.focus(); return; }
     if(!(amount>0)){ toast("اكتب مبلغ صحيح"); el.fAmount.focus(); return; }
+    const id = uid();
     data.push({
-      id:uid(), date, item, amount,
+      id, date, item, amount,
       source: el.fSource.value.trim(),
       cat: el.fCat.value.trim(),
       note: el.fNote.value.trim(),
       type: curType
     });
     store.save();
+    queueUpsert(id);
     el.fItem.value=""; el.fAmount.value=""; el.fNote.value="";
     el.fItem.focus();
     render();
@@ -478,7 +561,7 @@
       okText:"احذف", danger:true,
       onOk:()=>{
         data = data.filter(d=>d.id!==id);
-        store.save(); render(); toast("انحذف البند");
+        store.save(); queueDelete(id); render(); toast("انحذف البند");
       }
     });
   }
@@ -490,7 +573,7 @@
         title:"إلغاء الشطب؟",
         msg:`راح يرجع البند <b>«${esc(row.item)}»</b> فعّال ويُحتسب من جديد.`,
         okText:"إلغاء الشطب",
-        onOk:()=>{ row.struck=false; row.strikeNote=""; store.save(); render(); toast("رجع البند"); }
+        onOk:()=>{ row.struck=false; row.strikeNote=""; store.save(); queueUpsert(id); render(); toast("رجع البند"); }
       });
     } else {
       openModal({
@@ -498,7 +581,7 @@
         msg:`راح يبقى البند <b>«${esc(row.item)}»</b> ظاهر بس مشطوب، ومايُحتسب في المجاميع.`,
         input:true, inputLabel:"سبب الشطب / ملاحظة", placeholder:"مثال: تكرر بالغلط",
         okText:"اشطب",
-        onOk:(note)=>{ row.struck=true; row.strikeNote=note; store.save(); render(); toast("انشطب البند"); }
+        onOk:(note)=>{ row.struck=true; row.strikeNote=note; store.save(); queueUpsert(id); render(); toast("انشطب البند"); }
       });
     }
   }
@@ -514,7 +597,7 @@
     if(amt>0) row.amount = amt;
     row.source = source.trim();
     row.cat = cat.trim();
-    store.save(); render(); toast("تم التعديل");
+    store.save(); queueUpsert(id); render(); toast("تم التعديل");
   }
 
   // ---- filters ----
@@ -723,6 +806,7 @@
             struck:!!r.struck, strikeNote:r.strikeNote||""
           });
           ids.add(r.id); added++;
+          queueUpsert(r.id);
         });
         store.save(); render();
         toast(added? `تم استيراد ${added} بند` : "ما فيه بنود جديدة");
@@ -733,6 +817,7 @@
   });
 
   render();
+  initialSync();
 })();
 </script>
 </body>
